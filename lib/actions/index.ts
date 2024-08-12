@@ -8,6 +8,7 @@ import {
   getHighestPrice,
   getLowestPrice,
 } from "../scraper/utils";
+import { User } from "@/types";
 
 //all the code written here will run only on server
 export const scrapeAndStoreProduct = async (productUrl: string) => {
@@ -97,5 +98,25 @@ export async function getSimilarProducts(productId: string) {
   } catch (error) {
     console.log(error);
     return null;
+  }
+}
+
+export async function addUserEmailToProduct(
+  productId: string,
+  userEmail: string
+) {
+  try {
+    const product = await Product.findById(productId);
+    if (!product) return;
+    const userExists = product.users.some(
+      (user: User) => user.email === userEmail
+    );
+    if (!userExists) {
+      product.users.push({ email: userEmail });
+    }
+    await product.save();
+    const emailContent = generateEmailBody(product, "WELCOME");
+  } catch (error) {
+    console.log(error);
   }
 }
