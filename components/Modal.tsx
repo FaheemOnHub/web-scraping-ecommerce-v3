@@ -9,13 +9,20 @@ import {
 } from "@headlessui/react";
 import React from "react";
 import Image from "next/image";
-
-const Modal = () => {
+import { addUserEmailToProduct } from "@/lib/actions";
+type Props = {
+  productId: string;
+};
+const Modal = ({ productId }: Props) => {
   const [isSubmitting, setisSubmitting] = useState(false);
   const [email, setemail] = useState("");
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setisSubmitting(true);
+    await addUserEmailToProduct(productId, email);
+    setisSubmitting(false);
+    setemail("");
+    closeModal();
   };
   const [isOpen, setisOpen] = useState(false);
   const openModal = () => setisOpen(true);
@@ -93,7 +100,11 @@ const Modal = () => {
                       placeholder="Enter your email"
                     />
                   </div>
-                  <button type="submit" className="dialog-btn">
+                  <button
+                    type="submit"
+                    className="dialog-btn"
+                    onClick={handleSubmit}
+                  >
                     Track
                   </button>
                 </form>

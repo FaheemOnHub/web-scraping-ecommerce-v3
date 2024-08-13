@@ -9,6 +9,7 @@ import {
   getLowestPrice,
 } from "../scraper/utils";
 import { User } from "@/types";
+import { generateEmailBody, sendEmail } from "../nodeMailer";
 
 //all the code written here will run only on server
 export const scrapeAndStoreProduct = async (productUrl: string) => {
