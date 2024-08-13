@@ -1,6 +1,11 @@
 import nodemailer from "nodemailer";
+import dotenv from "dotenv";
+dotenv.config();
 import Product from "../models/products.model";
-import { EmailProductInfo, NotificationType } from "@/types";
+import { EmailContent, EmailProductInfo, NotificationType } from "@/types";
+import { html } from "cheerio";
+import { subscribe } from "diagnostics_channel";
+const THRESHOLD_PERCENTAGE = 40;
 export const Notification = {
   WELCOME: "WELCOME",
   CHANGE_OF_STOCK: "CHANGE_OF_STOCK",
@@ -24,7 +29,7 @@ export const generateEmailBody = (
       subject = `Welcome to Price Tracking for ${shortenedTitle}`;
       body = `
         <div>
-          <h2>Welcome to PriceWise 🚀</h2>
+          <h2>Welcome to PriceAnalyzer 🚀</h2>
           <p>You are now tracking ${product.title}.</p>
           <p>Here's an example of how you'll receive updates:</p>
           <div style="border: 1px solid #ccc; padding: 10px; background-color: #f8f8f8;">
@@ -73,4 +78,25 @@ export const generateEmailBody = (
   }
 
   return { subject, body };
+};
+const transpoter = nodemailer.createTransport({
+  pool: true,
+  service: "hotmail",
+  port: 2525,
+  auth: {
+    user: process.env.EMAIL,
+    pass: process.env.EMAIL_PASSWORD,
+  },
+  maxConnections: 1,
+});
+export const sendEmail = async (
+  emailContent: EmailContent,
+  sendTo: string[]
+) => {
+  const mailOptions = {
+    from: "",
+    to: sendTo,
+    html: emailContent.body,
+    subscribe: emailContent.subject,
+  };
 };
