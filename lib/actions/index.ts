@@ -116,7 +116,7 @@ export async function addUserEmailToProduct(
       product.users.push({ email: userEmail });
     }
     await product.save();
-    const emailContent = generateEmailBody(product, "WELCOME");
+    const emailContent = generateEmailBody(product, "LOWEST_PRICE");
     await sendEmail(emailContent, [userEmail]);
   } catch (error) {
     console.log(error);

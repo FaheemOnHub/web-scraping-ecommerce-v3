@@ -73,13 +73,14 @@ export async function scrapeAmazonProduct(productUrl: string) {
 
     //CONSTRUCT DATA OBJECT WITH SCRAPED DATA
     const data = {
-      productUrl,
+      url: productUrl,
       currency: symbol,
       image: imageUrls[0],
       title,
       currentPrice: minPrice,
+      originalPrice: minPrice,
       priceHistory: [],
-      discountPercentage,
+      discountRate: Number(discountPercentage),
       category: category,
       reviewCount: 0,
       stars: 0,

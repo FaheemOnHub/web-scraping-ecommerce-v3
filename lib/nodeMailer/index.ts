@@ -6,7 +6,7 @@ import { EmailContent, EmailProductInfo, NotificationType } from "@/types";
 import { html } from "cheerio";
 import { subscribe } from "diagnostics_channel";
 import { error } from "console";
-const THRESHOLD_PERCENTAGE = 40;
+export const THRESHOLD_PERCENTAGE = 40;
 export const Notification = {
   WELCOME: "WELCOME",
   CHANGE_OF_STOCK: "CHANGE_OF_STOCK",
@@ -98,7 +98,7 @@ export const sendEmail = async (
     from: process.env.EMAIL,
     to: sendTo,
     html: emailContent.body,
-    subscribe: emailContent.subject,
+    subject: emailContent.subject,
   };
   transpoter.sendMail(mailOptions, (error: any, info: any) => {
     if (error) return console.log(error);
