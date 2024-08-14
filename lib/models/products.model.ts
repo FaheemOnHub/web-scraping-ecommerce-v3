@@ -51,18 +51,19 @@ const productSchema = new mongoose.Schema(
     },
     discountPercentage: {
       type: Number,
+      required: false,
     },
     description: {
       type: String,
-      required: true,
+      required: false,
     },
     category: {
       type: String,
-      required: true,
+      required: false,
     },
     reviewCount: {
       type: Number,
-      required: true,
+      required: false,
     },
     isOutOfStock: {
       type: Boolean,

@@ -2,6 +2,7 @@
 import { scrapeAndStoreProduct } from "@/lib/actions";
 import { error } from "console";
 import React, { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 
 const isValidAmazonProductURL = (url: string) => {
   try {
@@ -23,6 +24,7 @@ const isValidAmazonProductURL = (url: string) => {
 };
 
 const Searchbar = () => {
+  const router = useRouter();
   const [searchPrompt, setsearchPrompt] = useState("");
   const [isLoading, setisLoading] = useState(false);
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -37,6 +39,10 @@ const Searchbar = () => {
       setisLoading(true);
       //scrape our product page
       const product = await scrapeAndStoreProduct(searchPrompt);
+      if (product) {
+        // Redirect to the product page
+        router.push(`/products/${product._id}`);
+      }
     } catch (error) {
       console.log(error);
     } finally {

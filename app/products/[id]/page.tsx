@@ -2,19 +2,23 @@ import Card from "@/components/Card";
 import ProductCard from "@/components/ProductCard";
 import { getProductById, getSimilarProducts } from "@/lib/actions";
 import { Product } from "@/types";
-import { redirect } from "next/dist/server/api-utils";
-import { NextApiResponse } from "next";
+import { redirect } from "next/navigation";
+
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 import Modal from "@/components/Modal";
+
 type Props = {
   params: { id: string };
 };
 const ProductDetails = async ({ params: { id } }: Props) => {
   const product: Product = await getProductById(id);
   const similarProducts = await getSimilarProducts(id);
-  if (!product) redirect("/");
+
+  if (!product) {
+    redirect(`/`);
+  }
 
   return (
     <div className="product-container">

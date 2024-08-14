@@ -1,5 +1,6 @@
 import Product from "@/lib/models/products.model";
 import { connectToDB } from "@/lib/mongoose";
+import { generateEmailBody, sendEmail } from "@/lib/nodeMailer";
 import { scrapeAmazonProduct } from "@/lib/scraper";
 import {
   getAveragePrice,
@@ -7,6 +8,8 @@ import {
   getHighestPrice,
   getLowestPrice,
 } from "@/lib/scraper/utils";
+import { User } from "@/types";
+import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
@@ -38,9 +41,29 @@ export async function GET() {
           );
           //checking item status & mailing
           const emailNotify = getEmailNotifType(scrapedProducts, current);
+          if (emailNotify && updatedProduct.user.length > 0) {
+            const productInfo = {
+              title: updatedProduct.title,
+              url: updatedProduct.url,
+            };
+            const emailContent = await generateEmailBody(
+              productInfo,
+              emailNotify
+            );
+            const userEmails = updatedProduct.users.map((user: any) => {
+              user.email;
+            });
+
+            await sendEmail(emailContent, userEmails);
+          }
+          return updatedProduct;
         }
       })
     );
+    return NextResponse.json({
+      message: "OK",
+      data: updatedProducts,
+    });
   } catch (error) {
     throw new Error(`Error in get cron,${error}`);
   }

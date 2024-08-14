@@ -22,7 +22,7 @@ export const scrapeAndStoreProduct = async (productUrl: string) => {
     if (!scrapedProduct) return;
 
     let product = scrapedProduct;
-    let existing = await Product.findOne({ url: scrapedProduct.productUrl });
+    let existing = await Product.findOne({ url: scrapedProduct.url });
     if (!existing) {
       // If no product is found by ID, try to find by title
       existing = await Product.findOne({ title: scrapedProduct.title });
@@ -42,7 +42,7 @@ export const scrapeAndStoreProduct = async (productUrl: string) => {
     }
     const newProduct = await Product.findOneAndUpdate(
       {
-        url: scrapedProduct.productUrl,
+        url: scrapedProduct.url,
       },
       product,
       {
@@ -51,6 +51,7 @@ export const scrapeAndStoreProduct = async (productUrl: string) => {
       }
     );
     revalidatePath(`/products/${newProduct._id}`);
+    return JSON.parse(JSON.stringify(newProduct));
   } catch (error: any) {
     throw new Error("❌ Failed to create/update product");
   }
@@ -62,7 +63,7 @@ export async function getProductById(productId: string) {
     connectToDB();
     const product = await Product.findOne({ _id: productId });
     if (!product) return null;
-    return product;
+    return JSON.parse(JSON.stringify(product));
   } catch (error) {
     console.log(error);
   }
