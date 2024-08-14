@@ -1,5 +1,5 @@
 "use client";
-import { scrapeAndStoreProduct } from "@/lib/actions";
+import { getAllProducts, scrapeAndStoreProduct } from "@/lib/actions";
 import { error } from "console";
 import React, { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -42,6 +42,7 @@ const Searchbar = () => {
       if (product) {
         // Redirect to the product page
         router.push(`/products/${product._id}`);
+        getAllProducts();
       }
     } catch (error) {
       console.log(error);
