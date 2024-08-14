@@ -26,7 +26,7 @@ export async function GET() {
         if (scrapedProducts) {
           const updatedPriceHistory: any = [
             ...current.priceHistory,
-            { price: scrapedProducts.currentPrice },
+            scrapedProducts.currentPrice,
           ];
           const newProduct = {
             ...scrapedProducts,
