@@ -42,7 +42,6 @@ const Searchbar = () => {
       if (product) {
         // Redirect to the product page
         router.push(`/products/${product._id}`);
-        getAllProducts();
       }
     } catch (error) {
       console.log(error);

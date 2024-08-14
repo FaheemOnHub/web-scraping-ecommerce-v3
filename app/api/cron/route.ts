@@ -8,28 +8,31 @@ import {
   getHighestPrice,
   getLowestPrice,
 } from "@/lib/scraper/utils";
-import { User } from "@/types";
 import { NextResponse } from "next/server";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
 export async function GET() {
   try {
-    connectToDB();
+    await connectToDB();
     const products = await Product.find({});
-    if (!products) throw new Error(`No products found`);
+    if (!products || products.length === 0)
+      throw new Error("No products found");
+
     const updatedProducts = await Promise.all(
       products.map(async (current) => {
         const scrapedProduct = await scrapeAmazonProduct(current.url);
-        if (!scrapedProduct) return;
+        if (!scrapedProduct) return null;
 
-        const updatedPriceHistory: any = [
+        const updatedPriceHistory = [
           ...current.priceHistory,
           {
             price: scrapedProduct.currentPrice,
           },
         ];
+
         const newProduct = {
           ...scrapedProduct,
           priceHistory: updatedPriceHistory,
@@ -39,14 +42,18 @@ export async function GET() {
         };
 
         const updatedProduct = await Product.findOneAndUpdate(
-          {
-            url: scrapedProduct.url,
-          },
-          newProduct
+          { url: newProduct.url },
+          newProduct,
+          { new: true }
         );
-        //checking item status & mailing
+
+        // Check item status & send email
         const emailNotify = getEmailNotifType(scrapedProduct, current);
-        if (emailNotify && updatedProduct.user.length > 0) {
+        if (
+          emailNotify &&
+          updatedProduct.users &&
+          updatedProduct.users.length > 0
+        ) {
           const productInfo = {
             title: updatedProduct.title,
             url: updatedProduct.url,
@@ -55,20 +62,33 @@ export async function GET() {
             productInfo,
             emailNotify
           );
-          const userEmails = updatedProduct.users.map((user: any) => {
-            user.email;
-          });
+          const userEmails = updatedProduct.users.map(
+            (user: any) => user.email
+          );
 
           await sendEmail(emailContent, userEmails);
         }
+
         return updatedProduct;
       })
     );
+
+    const filteredProducts = updatedProducts.filter(
+      (product) => product !== null
+    );
+
     return NextResponse.json({
       message: "OK",
-      data: updatedProducts,
+      data: filteredProducts,
     });
   } catch (error: any) {
-    throw new Error(`Error in get cron,${error}`);
+    console.error(`Error in GET cron job: ${error.message}`);
+    return NextResponse.json(
+      {
+        message: "Error",
+        error: error.message,
+      },
+      { status: 500 }
+    );
   }
 }
