@@ -21,53 +21,54 @@ export async function GET() {
     if (!products) throw new Error(`No products found`);
     const updatedProducts = await Promise.all(
       products.map(async (current) => {
-        const scrapedProducts = await scrapeAmazonProduct(current.url);
-        if (!scrapedProducts) throw new Error("No product found");
-        if (scrapedProducts) {
-          const updatedPriceHistory: any = [
-            ...current.priceHistory,
-            scrapedProducts.currentPrice,
-          ];
-          const newProduct = {
-            ...scrapedProducts,
-            priceHistory: updatedPriceHistory,
-            lowestPrice: getLowestPrice(updatedPriceHistory),
-            highestPrice: getHighestPrice(updatedPriceHistory),
-            averagePrice: getAveragePrice(updatedPriceHistory),
+        const scrapedProduct = await scrapeAmazonProduct(current.url);
+        if (!scrapedProduct) return;
+
+        const updatedPriceHistory: any = [
+          ...current.priceHistory,
+          {
+            price: scrapedProduct.currentPrice,
+          },
+        ];
+        const newProduct = {
+          ...scrapedProduct,
+          priceHistory: updatedPriceHistory,
+          lowestPrice: getLowestPrice(updatedPriceHistory),
+          highestPrice: getHighestPrice(updatedPriceHistory),
+          averagePrice: getAveragePrice(updatedPriceHistory),
+        };
+
+        const updatedProduct = await Product.findOneAndUpdate(
+          {
+            url: scrapedProduct.url,
+          },
+          newProduct
+        );
+        //checking item status & mailing
+        const emailNotify = getEmailNotifType(scrapedProduct, current);
+        if (emailNotify && updatedProduct.user.length > 0) {
+          const productInfo = {
+            title: updatedProduct.title,
+            url: updatedProduct.url,
           };
-
-          const updatedProduct = await Product.findOneAndUpdate(
-            {
-              url: scrapedProducts.url,
-            },
-            newProduct
+          const emailContent = await generateEmailBody(
+            productInfo,
+            emailNotify
           );
-          //checking item status & mailing
-          const emailNotify = getEmailNotifType(scrapedProducts, current);
-          if (emailNotify && updatedProduct.user.length > 0) {
-            const productInfo = {
-              title: updatedProduct.title,
-              url: updatedProduct.url,
-            };
-            const emailContent = await generateEmailBody(
-              productInfo,
-              emailNotify
-            );
-            const userEmails = updatedProduct.users.map((user: any) => {
-              user.email;
-            });
+          const userEmails = updatedProduct.users.map((user: any) => {
+            user.email;
+          });
 
-            await sendEmail(emailContent, userEmails);
-          }
-          return updatedProduct;
+          await sendEmail(emailContent, userEmails);
         }
+        return updatedProduct;
       })
     );
     return NextResponse.json({
       message: "OK",
       data: updatedProducts,
     });
-  } catch (error) {
+  } catch (error: any) {
     throw new Error(`Error in get cron,${error}`);
   }
 }
