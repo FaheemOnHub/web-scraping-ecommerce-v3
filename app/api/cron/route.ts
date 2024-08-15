@@ -66,8 +66,7 @@ export async function GET() {
           const userEmails = updatedProduct.users.map(
             (user: any) => user.email
           );
-
-          await sendEmail(emailContent, userEmails);
+          await sendEmail(userEmails, emailContent.subject, emailContent.body);
         }
 
         return updatedProduct;

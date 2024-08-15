@@ -1,11 +1,7 @@
-import nodemailer from "nodemailer";
-import dotenv from "dotenv";
-dotenv.config();
+import axios from "axios";
 import Product from "../models/products.model";
 import { EmailContent, EmailProductInfo, NotificationType } from "@/types";
-import { html } from "cheerio";
-import { subscribe } from "diagnostics_channel";
-import { error } from "console";
+
 export const THRESHOLD_PERCENTAGE = 40;
 export const Notification = {
   WELCOME: "WELCOME",
@@ -47,31 +43,31 @@ export const generateEmailBody = (
     case Notification.CHANGE_OF_STOCK:
       subject = `${shortenedTitle} is now back in stock!`;
       body = `
-        <div>
-          <h4>Hey, ${product.title} is now restocked! Grab yours before they run out again!</h4>
-          <p>See the product <a href="${product.url}" target="_blank" rel="noopener noreferrer">here</a>.</p>
-        </div>
-      `;
+          <div>
+            <h4>Hey, ${product.title} is now restocked! Grab yours before they run out again!</h4>
+            <p>See the product <a href="${product.url}" target="_blank" rel="noopener noreferrer">here</a>.</p>
+          </div>
+        `;
       break;
 
     case Notification.LOWEST_PRICE:
       subject = `Lowest Price Alert for ${shortenedTitle}`;
       body = `
-        <div>
-          <h4>Hey, ${product.title} has reached its lowest price ever!!</h4>
-          <p>Grab the product <a href="${product.url}" target="_blank" rel="noopener noreferrer">here</a> now.</p>
-        </div>
-      `;
+          <div>
+            <h4>Hey, ${product.title} has reached its lowest price ever!!</h4>
+            <p>Grab the product <a href="${product.url}" target="_blank" rel="noopener noreferrer">here</a> now.</p>
+          </div>
+        `;
       break;
 
     case Notification.THRESHOLD_MET:
       subject = `Discount Alert for ${shortenedTitle}`;
       body = `
-        <div>
-          <h4>Hey, ${product.title} is now available at a discount more than ${THRESHOLD_PERCENTAGE}%!</h4>
-          <p>Grab it right away from <a href="${product.url}" target="_blank" rel="noopener noreferrer">here</a>.</p>
-        </div>
-      `;
+          <div>
+            <h4>Hey, ${product.title} is now available at a discount more than ${THRESHOLD_PERCENTAGE}%!</h4>
+            <p>Grab it right away from <a href="${product.url}" target="_blank" rel="noopener noreferrer">here</a>.</p>
+          </div>
+        `;
       break;
 
     default:
@@ -80,26 +76,51 @@ export const generateEmailBody = (
 
   return { subject, body };
 };
-const transpoter = nodemailer.createTransport({
-  service: "gmail",
 
-  auth: {
-    user: process.env.EMAIL,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-});
+// New sendEmail function using Resend
 export const sendEmail = async (
-  emailContent: EmailContent,
-  sendTo: string[]
+  sendTo: string[],
+  subject: string,
+  body: string
 ) => {
-  const mailOptions = {
-    from: process.env.EMAIL,
-    to: sendTo,
-    html: emailContent.body,
-    subject: emailContent.subject,
-  };
-  transpoter.sendMail(mailOptions, (error: any, info: any) => {
-    if (error) return console.log(error);
-    console.log("Email Sent:", info);
-  });
+  const RESEND_API_KEY = process.env.RESEND_API_KEY; // Store your API key in .env
+  const RESEND_API_URL = "https://api.resend.com/emails";
+
+  try {
+    const response = await axios.post(
+      RESEND_API_URL,
+      {
+        from: process.env.EMAIL, // Your verified sender email
+        to: sendTo,
+        subject: subject,
+        html: body,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    console.log(response.data);
+    return response.data; // Return the response from Resend
+  } catch (error) {
+    console.error("Error sending email:", error);
+    throw new Error("Could not send email");
+  }
 };
+
+// export const sendEmailNotification = async (
+//   product: EmailProductInfo,
+//   notificationType: NotificationType,
+//   userEmails: string[]
+// ) => {
+//   const emailContent = generateEmailBody(product, notificationType);
+
+//   // Send email to all users
+//   await Promise.all(
+//     userEmails.map((email) =>
+//       sendEmail(email, emailContent.subject, emailContent.body)
+//     )
+//   );
+// };

@@ -108,18 +108,33 @@ export async function addUserEmailToProduct(
   userEmail: string
 ) {
   try {
+    // Find the product by ID
     const product = await Product.findById(productId);
-    if (!product) return;
+    if (!product) return; // Handle case where product is not found
+
+    // Check if the user already exists
     const userExists = product.users.some(
       (user: User) => user.email === userEmail
     );
     if (!userExists) {
+      // Add the user to the product's user list
       product.users.push({ email: userEmail });
+      await product.save(); // Save the updated product
+
+      // Generate the email content using the appropriate notification type
+      const emailContent = generateEmailBody(product, "WELCOME");
+
+      // Send the email notification
+      await sendEmail([userEmail], emailContent.subject, emailContent.body);
+    } else {
+      console.log(
+        `User with email ${userEmail} already exists for product ${productId}.`
+      );
+      const emailContent = generateEmailBody(product, "WELCOME");
+
+      await sendEmail([userEmail], emailContent.subject, emailContent.body);
     }
-    await product.save();
-    const emailContent = generateEmailBody(product, "LOWEST_PRICE");
-    await sendEmail(emailContent, [userEmail]);
   } catch (error) {
-    console.log(error);
+    console.error(`Error adding user email to product: ${error}`);
   }
 }
