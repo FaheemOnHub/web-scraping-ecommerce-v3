@@ -81,14 +81,12 @@ export const generateEmailBody = (
   return { subject, body };
 };
 const transpoter = nodemailer.createTransport({
-  pool: true,
-  service: "hotmail",
-  port: 2525,
+  service: "gmail",
+
   auth: {
     user: process.env.EMAIL,
     pass: process.env.EMAIL_PASSWORD,
   },
-  maxConnections: 1,
 });
 export const sendEmail = async (
   emailContent: EmailContent,
