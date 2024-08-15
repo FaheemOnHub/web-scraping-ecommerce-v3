@@ -1,3 +1,4 @@
+"use server";
 import Product from "@/lib/models/products.model";
 import { connectToDB } from "@/lib/mongoose";
 import { generateEmailBody, sendEmail } from "@/lib/nodeMailer";
