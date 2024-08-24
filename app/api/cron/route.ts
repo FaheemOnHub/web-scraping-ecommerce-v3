@@ -63,29 +63,34 @@ export async function GET() {
             newProduct,
             { new: true }
           );
+
+          //Check item status & send email
+          const emailNotify = getEmailNotifType(scrapedProduct, current);
+          if (
+            emailNotify &&
+            updatedProduct.users &&
+            updatedProduct.users.length > 0
+          ) {
+            const productInfo = {
+              title: updatedProduct.title,
+              url: updatedProduct.url,
+              currentPrice: updatedProduct.currentPrice,
+            };
+            const emailContent = await generateEmailBody(
+              productInfo,
+              emailNotify
+            );
+            const userEmails = updatedProduct.users.map(
+              (user: any) => user.email
+            );
+            await sendEmail(
+              userEmails,
+              emailContent.subject,
+              emailContent.body
+            );
+          }
           return updatedProduct;
         }
-
-        // Check item status & send email
-        // const emailNotify = getEmailNotifType(scrapedProduct, current);
-        // if (
-        //   emailNotify &&
-        //   updatedProduct.users &&
-        //   updatedProduct.users.length > 0
-        // ) {
-        //   const productInfo = {
-        //     title: updatedProduct.title,
-        //     url: updatedProduct.url,
-        //   };
-        //   const emailContent = await generateEmailBody(
-        //     productInfo,
-        //     emailNotify
-        //   );
-        //   const userEmails = updatedProduct.users.map(
-        //     (user: any) => user.email
-        //   );
-        //   await sendEmail(userEmails, emailContent.subject, emailContent.body);
-        // }
       })
     );
 
