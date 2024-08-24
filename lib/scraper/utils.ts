@@ -37,6 +37,13 @@ export function getCurrencySymbol(website: string): string {
       "www.amazon.nl": "€", // Euro
       "www.amazon.se": "kr", // Swedish Krona
       "www.amazon.pl": "zł", // Polish Zloty
+      "www.amazon.sg": "$", // Singapore Dollar
+      "www.amazon.sa": "﷼", // Saudi Riyal
+      "www.amazon.ae": "د.إ", // UAE Dirham
+      "www.amazon.com.tr": "₺", // Turkish Lira
+      "www.amazon.it": "€", // Euro
+      "www.amazon.es": "€", // Euro
+      "www.amazon.cn": "¥", // Chinese Yuan
     };
 
     // Extract the domain from the website URL
