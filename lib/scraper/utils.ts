@@ -1,14 +1,25 @@
 import { PriceHistoryItem, Product } from "@/types";
 import { Notification, THRESHOLD_PERCENTAGE } from "../nodeMailer";
-export const extractPrice = (...elements: any) => {
+
+export function extractPrice(...elements: any) {
   for (const element of elements) {
-    const priceText = element.text().trim();
+    let priceText = element.text().trim();
+
     if (priceText) {
-      return priceText.replace(/\D/g, "");
+      const cleanPrice = priceText.replace(/[^\d.]/g, "");
+
+      let firstPrice;
+
+      if (cleanPrice) {
+        firstPrice = cleanPrice.match(/\d+\.\d{2}/)?.[0];
+      }
+
+      return firstPrice || cleanPrice;
     }
   }
+
   return "";
-};
+}
 export function getCurrencySymbol(website: string): string {
   try {
     // Define a mapping of Amazon domains to their currency symbols
@@ -67,7 +78,7 @@ export function getAveragePrice(priceList: PriceHistoryItem[]) {
   const sumOfPrices = priceList.reduce((acc, curr) => acc + curr.price, 0);
   const averagePrice = sumOfPrices / priceList.length || 0;
 
-  return averagePrice;
+  return Number(averagePrice.toFixed(2));
 }
 
 export async function getCategory(cheerio: any) {

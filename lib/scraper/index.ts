@@ -4,8 +4,9 @@ import * as cheerio from "cheerio";
 import { extractPrice, getCategory, getCurrencySymbol } from "./utils";
 
 dotenv.config();
-const prices: any[] = [];
+
 export async function scrapeAmazonProduct(productUrl: string) {
+  const prices: any[] = [];
   if (!productUrl) return;
   //brightdata proxy configuration
   const username = process.env.username;
@@ -32,24 +33,28 @@ export async function scrapeAmazonProduct(productUrl: string) {
 
     //cateogry
     const category = await getCategory($);
-    // Extract discounted prices
+    //Extract discounted prices
+    const currentPrice = extractPrice(
+      $(".priceToPay .a-price-whole"),
+
+      $(".a.size.base.a-color-price"),
+      $(".a-button-selected .a-color-base")
+    );
+
+    const originalPrice = extractPrice(
+      $("#priceblock_ourprice"),
+      $(".a-price.a-text-price span.a-offscreen"),
+      $("#listPrice"),
+      $("#priceblock_dealprice"),
+      $(".a-size-base.a-color-price")
+    );
+
     const discountedPriceElements =
       $(".priceToPay .a-price-whole") ||
       $(".a.size.base.a-color-price") ||
       $(".a-button-selected .a-color-base ");
-    const discountedPriceFractionElements = $(".priceToPay .a-price-fraction");
-    // Add discounted prices
-    discountedPriceElements.each((i, el) => {
-      const whole = $(el).text().trim();
+    //Add discounted prices
 
-      const fraction = $(discountedPriceFractionElements[i]).text().trim();
-      // const price = parseFloat(whole + (fraction ? "." + fraction : ""));
-      const price = parseInt(whole.replace(/[^0-9.-]+/g, ""));
-
-      prices.push(price);
-    });
-
-    const minPrice = Math.min(...prices);
     const outOfStock =
       $("#availability span").text().trim().toLowerCase() ===
       "currently unavailable";
@@ -59,7 +64,7 @@ export async function scrapeAmazonProduct(productUrl: string) {
       $(".a-dynamic-image").attr("data-a-dynamic-image") ||
       "{}";
     const imageUrls = Object.keys(JSON.parse(image));
-    const formattedPrice = `${symbol}${minPrice}`;
+
     const discountPercentage = $(".savingsPercentage")
       .text()
       .replace(/[-%]/g, "");
@@ -77,8 +82,9 @@ export async function scrapeAmazonProduct(productUrl: string) {
       currency: symbol,
       image: imageUrls[0],
       title,
-      currentPrice: minPrice,
-      originalPrice: minPrice,
+
+      currentPrice: Number(currentPrice) || Number(originalPrice),
+      originalPrice: Number(currentPrice) || Number(originalPrice),
       priceHistory: [],
       discountRate: Number(discountPercentage),
       category: category || "Uncategorized",
@@ -86,12 +92,12 @@ export async function scrapeAmazonProduct(productUrl: string) {
       stars: 0,
       isOutOfStock: outOfStock,
       description: "to-be-added",
-      lowestPrice: 0,
-      highestPrice: 0,
-      averagePrice: 0,
+      lowestPrice: Number(currentPrice) || Number(originalPrice),
+      highestPrice: Number(currentPrice) || Number(originalPrice),
+      averagePrice: Number(currentPrice) || Number(originalPrice),
     };
     return data;
   } catch (error: any) {
-    throw new Error("failed to send a message");
+    console.log(error);
   }
 }

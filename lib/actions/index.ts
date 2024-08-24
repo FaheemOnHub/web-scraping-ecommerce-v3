@@ -39,21 +39,25 @@ export const scrapeAndStoreProduct = async (productUrl: string) => {
         highestPrice: getHighestPrice(updatedPriceHistory),
         averagePrice: getAveragePrice(updatedPriceHistory),
       };
+      revalidatePath(`/products/${existing._id}`);
+      return JSON.parse(JSON.stringify(existing));
+    } else {
+      const newProduct = await Product.findOneAndUpdate(
+        {
+          url: scrapedProduct.url,
+        },
+        product,
+        {
+          upsert: true,
+          new: true,
+        }
+      );
+      revalidatePath(`/products/${newProduct._id}`);
+      return JSON.parse(JSON.stringify(newProduct));
     }
-    const newProduct = await Product.findOneAndUpdate(
-      {
-        url: scrapedProduct.url,
-      },
-      product,
-      {
-        upsert: true,
-        new: true,
-      }
-    );
-    revalidatePath(`/products/${newProduct._id}`);
-    return JSON.parse(JSON.stringify(newProduct));
   } catch (error: any) {
-    throw new Error("❌ Failed to create/update product");
+    console.error(error);
+    // throw new Error("❌ Failed to create/update product");
   }
 };
 

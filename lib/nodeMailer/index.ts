@@ -2,7 +2,7 @@ import axios from "axios";
 import Product from "../models/products.model";
 import { EmailContent, EmailProductInfo, NotificationType } from "@/types";
 
-export const THRESHOLD_PERCENTAGE = 40;
+export const THRESHOLD_PERCENTAGE = 10;
 export const Notification = {
   WELCOME: "WELCOME",
   CHANGE_OF_STOCK: "CHANGE_OF_STOCK",
@@ -54,7 +54,7 @@ export const generateEmailBody = (
       subject = `Lowest Price Alert for ${shortenedTitle}`;
       body = `
           <div>
-            <h4>Hey, ${product.title} has reached its lowest price ever!!</h4>
+            <h4>Hey, ${product.title} has reached its lowest price ever at ${product.currentPrice}!!</h4>
             <p>Grab the product <a href="${product.url}" target="_blank" rel="noopener noreferrer">here</a> now.</p>
           </div>
         `;

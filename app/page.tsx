@@ -4,13 +4,13 @@ import Image from "next/image";
 import React from "react";
 import { getAllProducts } from "@/lib/actions";
 import ProductCard from "@/components/ProductCard";
-const Home = async () => {
+const renderProducts = async () => {
   const allProducts = await getAllProducts();
-  const renderProducts = () => {
-    return allProducts?.map((item) => (
-      <ProductCard key={item._id} product={item} />
-    ));
-  };
+  return allProducts?.map((item) => (
+    <ProductCard key={item._id} product={item} />
+  ));
+};
+const Home = async () => {
   return (
     <>
       <section className="px-6 md:px-20 py-24  ">

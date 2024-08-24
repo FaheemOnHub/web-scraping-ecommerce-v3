@@ -37,6 +37,7 @@ const Searchbar = () => {
     }
     try {
       setisLoading(true);
+
       //scrape our product page
       const product = await scrapeAndStoreProduct(searchPrompt);
       if (product) {
