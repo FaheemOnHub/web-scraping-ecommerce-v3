@@ -11,7 +11,8 @@ import {
 } from "@/lib/scraper/utils";
 import { NextResponse } from "next/server";
 
-const maxDuration = 1000 * 60 * 60 * 24; // 24 hours
+// const maxDuration = 1000 * 60 * 60 * 24; // 24 hours
+const maxDuration = 1000 * 60 * 60; // 1 hour
 const dynamic = "force-dynamic";
 const revalidate = 0;
 
