@@ -41,7 +41,7 @@ export async function scrapeAmazonProduct(productUrl: string) {
       $(".a-button-selected .a-color-base")
     );
 
-    const originalPrice = extractPrice(
+    let originalPrice = extractPrice(
       $("#priceblock_ourprice"),
       $(".a-price.a-text-price span.a-offscreen"),
       $("#listPrice"),
@@ -54,7 +54,9 @@ export async function scrapeAmazonProduct(productUrl: string) {
       $(".a.size.base.a-color-price") ||
       $(".a-button-selected .a-color-base ");
     //Add discounted prices
-
+if (!currentPrice && !originalPrice) {
+      currentPrice = 0;
+    }
     const outOfStock =
       $("#availability span").text().trim().toLowerCase() ===
       "currently unavailable";
