@@ -25,6 +25,7 @@ export async function GET() {
 
     const updatedProducts = await Promise.all(
       products.map(async (current) => {
+         await new Promise((resolve) => setTimeout(resolve, 10000));
         const scrapedProduct = await scrapeAmazonProduct(current.url);
         if (!scrapedProduct) return null;
         if (
