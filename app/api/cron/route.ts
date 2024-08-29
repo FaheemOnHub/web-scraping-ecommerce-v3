@@ -27,74 +27,80 @@ export async function GET() {
 
     const updatedProducts = [];
     for (const current of products) {
-      const scrapedProduct = await scrapeAmazonProduct(current.url);
-      if (!scrapedProduct) {
-        return NextResponse.json(
-          { message: "No products found" },
-          { status: 404 }
-        );
-      }
-      if (
-        scrapedProduct.currentPrice == null ||
-        scrapedProduct.currentPrice == 0
-      ) {
-        const newProduct = {
-          ...scrapedProduct,
-
-          isOutOfStock: true,
-        };
-        const updatedProduct = await Product.findOneAndUpdate(
-          { url: newProduct.url },
-          newProduct,
-          { new: true }
-        );
-        updatedProducts.push(updatedProduct);
-      } else {
-        const updatedPriceHistory = [
-          ...current.priceHistory,
-          {
-            price: scrapedProduct.currentPrice,
-          },
-        ];
-
-        const newProduct = {
-          ...scrapedProduct,
-          currentPrice: scrapedProduct.currentPrice,
-          priceHistory: updatedPriceHistory,
-          lowestPrice: getLowestPrice(updatedPriceHistory),
-          highestPrice: getHighestPrice(updatedPriceHistory),
-          averagePrice: getAveragePrice(updatedPriceHistory),
-          isOutOfStock: scrapedProduct.isOutOfStock,
-        };
-        const updatedProduct = await Product.findOneAndUpdate(
-          { url: newProduct.url },
-          newProduct,
-          { new: true }
-        );
-
-        //Check item status & send email
-        const emailNotify = getEmailNotifType(scrapedProduct, current);
-        if (
-          emailNotify &&
-          updatedProduct.users &&
-          updatedProduct.users.length > 0
-        ) {
-          const productInfo = {
-            title: updatedProduct.title,
-            url: updatedProduct.url,
-            currentPrice: updatedProduct.currentPrice,
-          };
-          const emailContent = await generateEmailBody(
-            productInfo,
-            emailNotify
-          );
-          const userEmails = updatedProduct.users.map(
-            (user: any) => user.email
-          );
-          await sendEmail(userEmails, emailContent.subject, emailContent.body);
+      try {
+        const scrapedProduct = await scrapeAmazonProduct(current.url);
+        if (!scrapedProduct) {
+          continue;
         }
-        updatedProducts.push(updatedProduct);
-        await new Promise((resolve) => setTimeout(resolve, 60000));
+        if (
+          scrapedProduct.currentPrice == null ||
+          scrapedProduct.currentPrice == 0
+        ) {
+          const newProduct = {
+            ...scrapedProduct,
+
+            isOutOfStock: true,
+          };
+          const updatedProduct = await Product.findOneAndUpdate(
+            { url: newProduct.url },
+            newProduct,
+            { new: true }
+          );
+          updatedProducts.push(updatedProduct);
+        } else {
+          const updatedPriceHistory = [
+            ...current.priceHistory,
+            {
+              price: scrapedProduct.currentPrice,
+            },
+          ];
+
+          const newProduct = {
+            ...scrapedProduct,
+            currentPrice: scrapedProduct.currentPrice,
+            priceHistory: updatedPriceHistory,
+            lowestPrice: getLowestPrice(updatedPriceHistory),
+            highestPrice: getHighestPrice(updatedPriceHistory),
+            averagePrice: getAveragePrice(updatedPriceHistory),
+            isOutOfStock: scrapedProduct.isOutOfStock,
+          };
+          const updatedProduct = await Product.findOneAndUpdate(
+            { url: newProduct.url },
+            newProduct,
+            { new: true }
+          );
+
+          //Check item status & send email
+          const emailNotify = getEmailNotifType(scrapedProduct, current);
+          if (
+            emailNotify &&
+            updatedProduct.users &&
+            updatedProduct.users.length > 0
+          ) {
+            const productInfo = {
+              title: updatedProduct.title,
+              url: updatedProduct.url,
+              currentPrice: updatedProduct.currentPrice,
+            };
+            const emailContent = await generateEmailBody(
+              productInfo,
+              emailNotify
+            );
+            const userEmails = updatedProduct.users.map(
+              (user: any) => user.email
+            );
+            await sendEmail(
+              userEmails,
+              emailContent.subject,
+              emailContent.body
+            );
+          }
+          updatedProducts.push(updatedProduct);
+          await new Promise((resolve) => setTimeout(resolve, 0));
+        }
+      } catch (error) {
+        console.error(`Error processing ${current.url}:`, error);
+        continue; // Continue to the next product on error
       }
     }
 
@@ -107,11 +113,11 @@ export async function GET() {
       data: filteredProducts,
     });
   } catch (error: any) {
-    console.error(`Error in GET cron job: ${error.message}`);
+    console.error(`Error in GET cron job: ${error} `);
     return NextResponse.json(
       {
         message: "Error",
-        error: error.message,
+        error: error,
       },
       { status: 500 }
     );
