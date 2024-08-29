@@ -15,6 +15,8 @@ import { NextResponse } from "next/server";
 const maxDuration = 1000 * 60 * 60; // 1 hour
 const dynamic = "force-dynamic";
 const revalidate = 0;
+const MAX_RETRIES = 3;
+const INITIAL_DELAY = 1000; // 1 second
 
 export async function GET() {
   try {
@@ -23,78 +25,73 @@ export async function GET() {
     if (!products || products.length === 0)
       throw new Error("No products found");
 
-    const updatedProducts = await Promise.all(
-      products.map(async (current) => {
-         await new Promise((resolve) => setTimeout(resolve, 10000));
-        const scrapedProduct = await scrapeAmazonProduct(current.url);
-        if (!scrapedProduct) return null;
+    const updatedProducts = [];
+    for (const current of products) {
+      const scrapedProduct = await scrapeAmazonProduct(current.url);
+      if (!scrapedProduct) return null;
+      if (
+        scrapedProduct.currentPrice == null ||
+        scrapedProduct.currentPrice == 0
+      ) {
+        const newProduct = {
+          ...scrapedProduct,
+
+          isOutOfStock: true,
+        };
+        const updatedProduct = await Product.findOneAndUpdate(
+          { url: newProduct.url },
+          newProduct,
+          { new: true }
+        );
+        updatedProducts.push(updatedProduct);
+      } else {
+        const updatedPriceHistory = [
+          ...current.priceHistory,
+          {
+            price: scrapedProduct.currentPrice,
+          },
+        ];
+
+        const newProduct = {
+          ...scrapedProduct,
+          currentPrice: scrapedProduct.currentPrice,
+          priceHistory: updatedPriceHistory,
+          lowestPrice: getLowestPrice(updatedPriceHistory),
+          highestPrice: getHighestPrice(updatedPriceHistory),
+          averagePrice: getAveragePrice(updatedPriceHistory),
+          isOutOfStock: scrapedProduct.isOutOfStock,
+        };
+        const updatedProduct = await Product.findOneAndUpdate(
+          { url: newProduct.url },
+          newProduct,
+          { new: true }
+        );
+
+        //Check item status & send email
+        const emailNotify = getEmailNotifType(scrapedProduct, current);
         if (
-          scrapedProduct.currentPrice == null ||
-          scrapedProduct.currentPrice == 0
+          emailNotify &&
+          updatedProduct.users &&
+          updatedProduct.users.length > 0
         ) {
-          const newProduct = {
-            ...scrapedProduct,
-
-            isOutOfStock: true,
+          const productInfo = {
+            title: updatedProduct.title,
+            url: updatedProduct.url,
+            currentPrice: updatedProduct.currentPrice,
           };
-          const updatedProduct = await Product.findOneAndUpdate(
-            { url: newProduct.url },
-            newProduct,
-            { new: true }
+          const emailContent = await generateEmailBody(
+            productInfo,
+            emailNotify
           );
-          return updatedProduct;
-        } else {
-          const updatedPriceHistory = [
-            ...current.priceHistory,
-            {
-              price: scrapedProduct.currentPrice,
-            },
-          ];
-
-          const newProduct = {
-            ...scrapedProduct,
-            currentPrice: scrapedProduct.currentPrice,
-            priceHistory: updatedPriceHistory,
-            lowestPrice: getLowestPrice(updatedPriceHistory),
-            highestPrice: getHighestPrice(updatedPriceHistory),
-            averagePrice: getAveragePrice(updatedPriceHistory),
-            isOutOfStock: scrapedProduct.isOutOfStock,
-          };
-          const updatedProduct = await Product.findOneAndUpdate(
-            { url: newProduct.url },
-            newProduct,
-            { new: true }
+          const userEmails = updatedProduct.users.map(
+            (user: any) => user.email
           );
-
-          //Check item status & send email
-          const emailNotify = getEmailNotifType(scrapedProduct, current);
-          if (
-            emailNotify &&
-            updatedProduct.users &&
-            updatedProduct.users.length > 0
-          ) {
-            const productInfo = {
-              title: updatedProduct.title,
-              url: updatedProduct.url,
-              currentPrice: updatedProduct.currentPrice,
-            };
-            const emailContent = await generateEmailBody(
-              productInfo,
-              emailNotify
-            );
-            const userEmails = updatedProduct.users.map(
-              (user: any) => user.email
-            );
-            await sendEmail(
-              userEmails,
-              emailContent.subject,
-              emailContent.body
-            );
-          }
-          return updatedProduct;
+          await sendEmail(userEmails, emailContent.subject, emailContent.body);
         }
-      })
-    );
+        updatedProducts.push(updatedProduct);
+        await new Promise((resolve) => setTimeout(resolve, 60000));
+      }
+    }
 
     const filteredProducts = updatedProducts.filter(
       (product) => product !== null
