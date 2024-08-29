@@ -28,7 +28,12 @@ export async function GET() {
     const updatedProducts = [];
     for (const current of products) {
       const scrapedProduct = await scrapeAmazonProduct(current.url);
-      if (!scrapedProduct) return null;
+      if (!scrapedProduct) {
+        return NextResponse.json(
+          { message: "No products found" },
+          { status: 404 }
+        );
+      }
       if (
         scrapedProduct.currentPrice == null ||
         scrapedProduct.currentPrice == 0
