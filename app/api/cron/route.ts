@@ -96,7 +96,7 @@ export async function GET() {
             );
           }
           updatedProducts.push(updatedProduct);
-          await new Promise((resolve) => setTimeout(resolve, 0));
+          await new Promise((resolve) => setTimeout(resolve, 50000));
         }
       } catch (error) {
         console.error(`Error processing ${current.url}:`, error);
